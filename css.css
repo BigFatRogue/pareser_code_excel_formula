@@ -1,0 +1,38 @@
+* {
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 10pt;
+}
+
+.container {
+    display: flex;
+    width: 600px;
+    justify-content: center;
+    align-items: center;
+}
+
+.input,
+.output {
+    border: 1px solid gray;
+    min-height: 25px; 
+    margin: 5px;
+    height: fit-content;
+    text-wrap: wrap;
+}
+
+.input {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    width: 30%;
+
+    &:focus {
+        outline-width: 0px;
+    }
+}
+
+
+.output {
+    flex-grow: 1;
+}
+
