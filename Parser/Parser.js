@@ -1,5 +1,171 @@
-export class Pareser {
-    constructor() {
-        
+import TokenType, { tokenCategoryList, tokenTypeList } from './TokenType.js'
+
+import NodeExpression from './AST/NodeExpression.js'
+import RootNode from './AST/RootNode.js'
+import NumberNode from './AST/NumberNode.js'
+import StringNode from './AST/StringNode.js'
+import VariableNode from './AST/VariableNode.js'
+import CellNode from './AST/CellNode.js'
+import RangeNode from './AST/RangeNode.js'
+
+import BinaryNodeExpression from './AST/BinaryNodeExpression.js'
+import FunctionNodeExpression from './AST/FunctionNodeExpression.js'
+
+
+export default class Parser {
+    /**
+     * Парсер кода
+     * @param {TokenType[]} tokinList 
+     */
+    constructor(tokinList) {
+        this.tokenList = tokinList
+        this.currentNode = null
+        this.pos = 0
+        this.nodeList = []
     }
+
+    getCurrentToken() {
+        if (this.pos < this.tokenList.length) {
+            const currenToken = this.tokenList[this.pos]
+            this.pos++
+            return currenToken
+        }
+        return null
+    }
+
+    getTokenAndCheckType(...typeTokens) {
+        const token = this.getCurrentToken()
+        if (typeTokens.find(type => type.name === token.type.name) !== undefined) {
+            return token
+        }
+        return null
+    }
+
+    getTokenAndCheckCategory(...categoryTokens) {
+        const token = this.getCurrentToken()
+        if (categoryTokens.find(category => category === token.type.category) !== undefined) {
+            return token
+        }
+        return null
+    }
+
+    parseFunction() {
+        let token = this.getCurrentToken()
+        if (token.type === tokenTypeList.LPAR) {
+            this.pos--
+            let args = []
+            let argNode
+            while (true) {
+                let token = this.getCurrentToken()
+                if (token.type === tokenTypeList.SEMICOLON) {
+                    args.push(argNode)
+                }
+                else if (token.type === tokenTypeList.RPAR) {
+                    return args
+                } 
+                argNode = this.parseFormula()
+            }
+        } else {
+            throw new Error(`На позиции ${this.pos} ожидалась отрывающая скобка`)
+        }
+    }
+        
+    parseLeaf() {
+        const token = this.getCurrentToken()
+        if (token.type === tokenTypeList.NUMBER) {
+            return new NumberNode(token.text)
+        } 
+        else if (token.type === tokenTypeList.STRING) {
+            return new StringNode(token.text)
+        } 
+        else if (token.type === tokenTypeList.VARIABLE) {
+            return new VariableNode(token.text)
+        }
+        else if (token.type === tokenTypeList.CELL) {
+            return new CellNode(token.text)
+        }
+        else if (token.type === tokenTypeList.FUNCTION) {
+            const functionNode = new FunctionNodeExpression(token)
+            functionNode.addArg(this.parseFunction())
+            return functionNode
+        }
+        return null
+    }
+
+    parseBinaryExpression() {
+        const token = this.getTokenAndCheckCategory(tokenCategoryList.BINARY_OPERATOR)
+        if (token) {
+            const binaryNode = new BinaryNodeExpression(token.text)
+            binaryNode.priority = token.type.priority
+            return binaryNode
+        }
+        return null
+    }
+    
+    parseBracket() {
+        if (this.getTokenAndCheckType(tokenTypeList.LPAR)) {
+            const node = this.parseFormula()
+            const token = this.getTokenAndCheckType(tokenTypeList.RPAR)
+            if (token) {
+                return node
+            } else {
+                throw new Error(`На позиции ${this.pos} ожидалась закрывающая скобка`)
+            }
+        } else {
+            this.pos--
+            return this.parseLeaf()
+        }        
+    }
+
+    parseFormula() {
+        let node = this.parseBracket()
+
+        const binaryOperator = this.parseBinaryExpression()
+        if (binaryOperator) {
+            binaryOperator.leftNode = node
+            const rigthNode = this.parseFormula()
+
+            if (rigthNode instanceof BinaryNodeExpression) {
+                console.log(binaryOperator, rigthNode)
+                if (rigthNode.priority < binaryOperator.priority) {
+                    binaryOperator.rigthNode = rigthNode.leftNode
+                    rigthNode.leftNode = binaryOperator
+                    return rigthNode
+                } 
+            }
+            binaryOperator.rigthNode = rigthNode
+            return binaryOperator
+            
+        } else {
+            this.pos--
+        }
+        return node
+    }
+    
+    parseExpression() {
+        const variable = this.getTokenAndCheckType(tokenTypeList.VARIABLE)
+        if (variable) {
+            const assign = this.getTokenAndCheckType(tokenTypeList.ASSIGN) 
+            if (assign) {
+                return new BinaryNodeExpression(assign.text, new VariableNode(variable.text), this.parseFormula())
+            }
+            throw new Error(`На позиции ${this.pos} ожидался оператор присваивания`)
+        }
+        throw new Error(`На позиции ${this.pos} ожидалась переменная`)
+    }
+
+    parseCode() {
+        while (this.pos < this.tokenList.length) {
+            const codeStringNode = this.parseExpression();
+            const tokenEndString = this.getTokenAndCheckType(tokenTypeList.ENDSTRING)
+            if (tokenEndString) {
+                this.nodeList.push(codeStringNode);
+            } else {
+                throw new Error(`На позиции ${this.pos} ожидался конец строки`)
+            }
+        }
+        console.log(this.nodeList)
+        return this.nodeList;
+    }
+
 }
