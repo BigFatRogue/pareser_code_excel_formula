@@ -11,12 +11,6 @@ export default class Lexer {
         this.code = code
         this.pos = 0
         this.tokenList = []
-
-        // this.#preprocess()
-    }
-
-    #preprocess() {
-        this.code = this.code.replaceAll('<br>', '<>')
     }
 
     matchToken(tokenTypesValues) {
@@ -27,11 +21,6 @@ export default class Lexer {
             const result = this.code.substring(this.pos).match(regex)
 
             if (result && result[0]) {
-                if (tokenType === tokenTypeList.SPACE || tokenType === tokenTypeList.TABULATION) {
-                    this.pos++
-                    return false
-                }
-
                 const token = new Token(tokenType, result[0], this.pos)
                 this.pos += result[0].length
                 this.tokenList.push(token)
@@ -52,17 +41,27 @@ export default class Lexer {
     }
 
     toString() {
-        let listString = []
+        let str
         this.tokenList.forEach(item => {
-            listString.push(item.text)
+            str += item.text
         }) 
-        return listString
+        return str
     }
 
     toType() {
         let listString = []
         this.tokenList.forEach(item => {
             listString.push(`[${item.type.name}: ${item.text}]`)
+        }) 
+        return listString
+    }
+
+    toClearType() {
+        let listString = []
+        this.tokenList.forEach(item => {
+            if (item.type.name !== tokenTypeList.TABULATION.name && item.type.name !== tokenTypeList.SPACE.name) {
+                listString.push(`[${item.type.name}: ${item.text}]`)
+            }
         }) 
         return listString
     }

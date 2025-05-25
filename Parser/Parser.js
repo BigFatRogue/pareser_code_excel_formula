@@ -1,13 +1,11 @@
 import TokenType, { tokenCategoryList, tokenTypeList } from './TokenType.js'
 
 import NodeExpression from './AST/NodeExpression.js'
-import RootNode from './AST/RootNode.js'
 import NumberNode from './AST/NumberNode.js'
 import StringNode from './AST/StringNode.js'
 import VariableNode from './AST/VariableNode.js'
 import CellNode from './AST/CellNode.js'
 import RangeNode from './AST/RangeNode.js'
-
 import BinaryNodeExpression from './AST/BinaryNodeExpression.js'
 import FunctionNodeExpression from './AST/FunctionNodeExpression.js'
 
@@ -50,19 +48,25 @@ export default class Parser {
     }
 
     parseFunction() {
-        let token = this.getCurrentToken()
-        if (token.type === tokenTypeList.LPAR) {
+        let token = this.getTokenAndCheckType(tokenTypeList.LPAR)
+        if (token) {
             this.pos--
             let args = []
             let argNode
             while (true) {
-                let token = this.getCurrentToken()
-                if (token.type === tokenTypeList.SEMICOLON) {
+                token = this.getTokenAndCheckType(tokenTypeList.SEMICOLON, tokenTypeList.RPAR)
+                if (token) {
                     args.push(argNode)
+                } else {
+                    this.pos--
                 }
-                else if (token.type === tokenTypeList.RPAR) {
+
+                token = this.getTokenAndCheckType(tokenTypeList.RPAR)
+                if (token) {
                     return args
-                } 
+                } else {
+                    this.pos--
+                }
                 argNode = this.parseFormula()
             }
         } else {
@@ -83,6 +87,9 @@ export default class Parser {
         }
         else if (token.type === tokenTypeList.CELL) {
             return new CellNode(token.text)
+        }
+        else if (token.type === tokenTypeList.RANGE) {
+            return new RangeNode(token.text)
         }
         else if (token.type === tokenTypeList.FUNCTION) {
             const functionNode = new FunctionNodeExpression(token)
@@ -107,6 +114,7 @@ export default class Parser {
             const node = this.parseFormula()
             const token = this.getTokenAndCheckType(tokenTypeList.RPAR)
             if (token) {
+                node.priority = 4
                 return node
             } else {
                 throw new Error(`На позиции ${this.pos} ожидалась закрывающая скобка`)
@@ -118,15 +126,13 @@ export default class Parser {
     }
 
     parseFormula() {
-        let node = this.parseBracket()
-
+        const node = this.parseBracket()
         const binaryOperator = this.parseBinaryExpression()
         if (binaryOperator) {
             binaryOperator.leftNode = node
             const rigthNode = this.parseFormula()
 
             if (rigthNode instanceof BinaryNodeExpression) {
-                console.log(binaryOperator, rigthNode)
                 if (rigthNode.priority < binaryOperator.priority) {
                     binaryOperator.rigthNode = rigthNode.leftNode
                     rigthNode.leftNode = binaryOperator
@@ -135,7 +141,6 @@ export default class Parser {
             }
             binaryOperator.rigthNode = rigthNode
             return binaryOperator
-            
         } else {
             this.pos--
         }
@@ -155,6 +160,7 @@ export default class Parser {
     }
 
     parseCode() {
+        this.tokenList = this.tokenList.filter(token => token.type !== tokenTypeList.TABULATION && token.type !== tokenTypeList.SPACE)
         while (this.pos < this.tokenList.length) {
             const codeStringNode = this.parseExpression();
             const tokenEndString = this.getTokenAndCheckType(tokenTypeList.ENDSTRING)
@@ -168,4 +174,7 @@ export default class Parser {
         return this.nodeList;
     }
 
+    run() {
+
+    }
 }

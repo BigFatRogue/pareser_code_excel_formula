@@ -7,32 +7,44 @@
 .container {
     display: flex;
     width: 600px;
-    justify-content: center;
+    justify-content: start;
     align-items: center;
+    padding: 5px;
+}
+
+.wrapper {
+    position: relative;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    flex-grow: 1;
 }
 
 .input,
 .output {
-    border: 1px solid gray;
     min-height: 25px; 
-    margin: 5px;
     height: fit-content;
     text-wrap: wrap;
+    min-width: 600px;
 }
 
 .input {
-    display: flex;
-    justify-content: start;
-    align-items: center;
-    width: 30%;
+    color: rgba(0, 0, 0, 0);
+    caret-color: red;
+    
+    z-index: 2;
 
     &:focus {
         outline-width: 0px;
     }
+
 }
 
-
 .output {
-    flex-grow: 1;
+    position: absolute;
+    border: 1px solid gray;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
