@@ -25,12 +25,12 @@
     min-height: 25px; 
     height: fit-content;
     text-wrap: wrap;
+    word-wrap: normal;
     min-width: 600px;
 }
 
 .input {
     color: rgba(0, 0, 0, 0);
-    caret-color: red;
     
     z-index: 2;
 

@@ -6,25 +6,33 @@ import { tokenTypeList } from "./Parser/TokenType.js"
 const divInputElement = document.querySelector('.input')
 const divOutputElement = document.querySelector('.output')
 
-const formula = `
-a=3^(1/2)<br>
-`
-divInputElement.innerHTML = formula
-const lexer = new Lexer(formula)
-const tokenList = lexer.tokenize()
+// const formula = `
+// a=3^(1/2)<br>
+// `
+// divInputElement.innerHTML = formula
+// const lexer = new Lexer(formula)
+// const tokenList = lexer.tokenize()
 
-console.log(lexer.toType())
+// console.log(lexer.toType())
 
-const parser = new Parser(tokenList)
-parser.parseCode()
+// const parser = new Parser(tokenList)
+// parser.parseCode()
+
+let tokenList = null
 
 divInputElement.addEventListener('input', (event) => {
     let text = event.target.textContent
     divOutputElement.textContent = text
+
+    if (tokenList !== null) {
+        tokenList = null
+    }
+ 
     if (text.length > 0 && text[0] === '=') {
-        text = 'A=' + text  
-        const lexer = new Lexer(text.substring(1))
-        const tokenList =  lexer.tokenize()
+        text = 'A' + text  + '<br>'
+
+        const lexer = new Lexer(text)
+        tokenList = lexer.tokenize()
         let newtext = ''
         tokenList.slice(1).forEach(token => {
             if (token.type === tokenTypeList.UNKNOWN) {
@@ -34,6 +42,16 @@ divInputElement.addEventListener('input', (event) => {
             }
         })
         divOutputElement.innerHTML = newtext
+    }
+})
+
+divInputElement.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault()
+        if (tokenList) {
+            const parser = new Parser(tokenList)
+            parser.parseCode()
+        }
     }
 })
 
