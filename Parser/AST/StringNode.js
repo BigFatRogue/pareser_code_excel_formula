@@ -2,8 +2,12 @@ import NodeExpression from "./NodeExpression.js"
 
 
 export default class StringNode extends NodeExpression {
-    constructor(str) {
+    /**
+     * 
+     * @param {string} text 
+     */
+    constructor(text) {
         super()
-        this.str = str
+        this.text = text.slice(1, -1)
     }
 }

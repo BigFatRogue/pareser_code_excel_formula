@@ -2,12 +2,13 @@ import NodeExpression from "./NodeExpression.js"
 
 
 export default class FunctionNodeExpression extends NodeExpression {
-    constructor(formula) {
+    constructor(name) {
         super()
-        this.formula = formula
+        this.name = name
         this.args = []
     }
-    addArg(arg) {
-        this.args.push(arg)
+
+    addArgs(args) {
+        this.args.push(...args)
     }
 }

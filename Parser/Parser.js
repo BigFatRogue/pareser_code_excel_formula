@@ -10,7 +10,7 @@ import BinaryNodeExpression from './AST/BinaryNodeExpression.js'
 import FunctionNodeExpression from './AST/FunctionNodeExpression.js'
 
 
-export default class Parser {
+export default class AST {
     /**
      * Парсер кода
      * @param {TokenType[]} tokinList 
@@ -41,7 +41,7 @@ export default class Parser {
 
     getTokenAndCheckCategory(...categoryTokens) {
         const token = this.getCurrentToken()
-        if (categoryTokens.find(category => category === token.type.category) !== undefined) {
+        if (categoryTokens.find(category => token.type.category.includes(category)) !== undefined) {
             return token
         }
         return null
@@ -50,12 +50,12 @@ export default class Parser {
     parseFunction() {
         let token = this.getTokenAndCheckType(tokenTypeList.LPAR)
         if (token) {
-            this.pos--
             let args = []
             let argNode
             while (true) {
-                token = this.getTokenAndCheckType(tokenTypeList.SEMICOLON, tokenTypeList.RPAR)
+                token = this.getTokenAndCheckType(tokenTypeList.SEMICOLON)
                 if (token) {
+
                     args.push(argNode)
                 } else {
                     this.pos--
@@ -63,6 +63,7 @@ export default class Parser {
 
                 token = this.getTokenAndCheckType(tokenTypeList.RPAR)
                 if (token) {
+                    args.push(argNode)
                     return args
                 } else {
                     this.pos--
@@ -92,8 +93,8 @@ export default class Parser {
             return new RangeNode(token.text)
         }
         else if (token.type === tokenTypeList.FUNCTION) {
-            const functionNode = new FunctionNodeExpression(token)
-            functionNode.addArg(this.parseFunction())
+            const functionNode = new FunctionNodeExpression(token.text)
+            functionNode.addArgs(this.parseFunction())
             return functionNode
         }
         return null
@@ -102,7 +103,7 @@ export default class Parser {
     parseBinaryExpression() {
         const token = this.getTokenAndCheckCategory(tokenCategoryList.BINARY_OPERATOR)
         if (token) {
-            const binaryNode = new BinaryNodeExpression(token.text)
+            const binaryNode = new BinaryNodeExpression(token.text, token.type.category)
             binaryNode.priority = token.type.priority
             return binaryNode
         }
@@ -127,20 +128,20 @@ export default class Parser {
 
     parseFormula() {
         const node = this.parseBracket()
-        const binaryOperator = this.parseBinaryExpression()
-        if (binaryOperator) {
-            binaryOperator.leftNode = node
+        const binarynNode = this.parseBinaryExpression()
+        if (binarynNode) {
+            binarynNode.leftNode = node
             const rigthNode = this.parseFormula()
 
             if (rigthNode instanceof BinaryNodeExpression) {
-                if (rigthNode.priority < binaryOperator.priority) {
-                    binaryOperator.rigthNode = rigthNode.leftNode
-                    rigthNode.leftNode = binaryOperator
+                if (rigthNode.priority < binarynNode.priority) {
+                    binarynNode.rigthNode = rigthNode.leftNode
+                    rigthNode.leftNode = binarynNode
                     return rigthNode
                 } 
             }
-            binaryOperator.rigthNode = rigthNode
-            return binaryOperator
+            binarynNode.rigthNode = rigthNode
+            return binarynNode
         } else {
             this.pos--
         }
@@ -148,11 +149,11 @@ export default class Parser {
     }
     
     parseExpression() {
-        const variable = this.getTokenAndCheckType(tokenTypeList.VARIABLE)
-        if (variable) {
-            const assign = this.getTokenAndCheckType(tokenTypeList.ASSIGN) 
-            if (assign) {
-                return new BinaryNodeExpression(assign.text, new VariableNode(variable.text), this.parseFormula())
+        const variableToken = this.getTokenAndCheckType(tokenTypeList.VARIABLE)
+        if (variableToken) {
+            const assignToken = this.getTokenAndCheckType(tokenTypeList.ASSIGN) 
+            if (assignToken) {
+                return new BinaryNodeExpression(assignToken.text, assignToken.type.category, new VariableNode(variableToken.text), this.parseFormula())
             }
             throw new Error(`На позиции ${this.pos} ожидался оператор присваивания`)
         }
@@ -170,11 +171,7 @@ export default class Parser {
                 throw new Error(`На позиции ${this.pos} ожидался конец строки`)
             }
         }
-        console.log(this.nodeList)
         return this.nodeList;
     }
 
-    run() {
-
-    }
 }
